@@ -1,0 +1,6 @@
+{
+  "name": "AI review",
+  "description": "Review each pull request with Claude and publish the findings as one GitHub review, through secondshift-labs/ai-review-workflows.",
+  "iconName": "octicon code-review",
+  "categories": ["Automation"]
+}

@@ -1,0 +1,42 @@
+name: review
+
+# Reviews a pull request with Claude and publishes the findings as one GitHub review, through
+# secondshift-labs/ai-review-workflows. Before the first round:
+#
+# 1. Add the CLAUDE_CODE_OAUTH_TOKEN repository secret, from `claude setup-token`.
+# 2. Set the REVIEW_MODEL repository variable, for example claude-opus-5-5.
+# 3. Set the REVIEW_ENABLED repository variable to "true".
+#
+# A pull request opened ready gets one round unasked. One opened as a draft gets it when it is
+# marked ready. Every round after that is asked for by adding the ai-review label.
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Pull request number to review
+        required: true
+        type: number
+  pull_request:
+    types: [opened, ready_for_review, labeled]
+
+jobs:
+  review:
+    # Kill switch: a round runs only while REVIEW_ENABLED is "true".
+    if: vars.REVIEW_ENABLED == 'true'
+    # A called workflow's job permissions are capped by this job's. The publishing job needs
+    # pull-requests: write, or it gets a read-only token and fails at the send.
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: read
+      actions: read
+    uses: secondshift-labs/ai-review-workflows/.github/workflows/review.yml@7555c6d3a60770f51675129936ccff7e8677a83c # v3.0.0
+    with:
+      pull_request: ${{ inputs.pull_request || github.event.pull_request.number }}
+      model: ${{ vars.REVIEW_MODEL }}
+      # A sticky round finds its review by this name, so it MUST NOT change once reviews exist.
+      source: ai-review
+      provider: anthropic
+      debug: ${{ vars.REVIEW_DEBUG == 'true' }}
+    secrets:
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
